@@ -189,6 +189,23 @@
       line-height: 1.55;
     }
 
+    .app-shell {
+      width: 100%;
+      max-width: 720px;
+      display: block;
+      margin: 0 auto;
+      align-items: start;
+      z-index: 1;
+      position: relative;
+      transition: max-width 0.42s cubic-bezier(.4,0,.2,1), width 0.42s cubic-bezier(.4,0,.2,1), transform 0.42s cubic-bezier(.4,0,.2,1);
+    }
+    .app-shell.has-references {
+      display: grid;
+      max-width: 1280px;
+      grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.75fr);
+      gap: 22px;
+    }
+
     /* ── API KEY INPUT ────────────────────────────────────────*/
     .api-section {
       background: var(--bg2);
@@ -364,6 +381,75 @@
       font-weight: 600;
       color: var(--ink);
     }
+
+    .references-panel {
+      position: sticky;
+      top: 24px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 0 22px;
+      box-shadow: none;
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
+      max-height: 0;
+      overflow: hidden;
+      opacity: 0;
+      transform: translateX(22px);
+      pointer-events: none;
+      transition: opacity 0.35s ease, transform 0.35s ease, max-height 0.35s ease, padding 0.35s ease, box-shadow 0.35s ease;
+    }
+    .app-shell.has-references .references-panel {
+      padding: 24px 22px;
+      box-shadow: var(--shadow-md);
+      max-height: calc(100vh - 48px);
+      opacity: 1;
+      transform: translateX(0);
+      pointer-events: auto;
+    }
+    .references-panel h2 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.4rem;
+      font-weight: 400;
+      margin-bottom: 8px;
+      color: var(--ink);
+    }
+    .references-panel p {
+      font-size: 13px;
+      line-height: 1.55;
+      color: var(--ink3);
+      margin-bottom: 14px;
+    }
+    .refs-empty {
+      font-size: 13px;
+      color: var(--ink3);
+      background: var(--bg2);
+      border: 1px dashed var(--border);
+      border-radius: var(--radius-sm);
+      padding: 14px;
+    }
+    .ref-list {
+      list-style: none;
+      display: grid;
+      gap: 10px;
+    }
+    .ref-item {
+      display: grid;
+      padding: 12px;
+      border-radius: 14px;
+      background: var(--surface-solid);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-sm);
+    }
+    .ref-item a {
+      color: var(--accent2);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 13.5px;
+      line-height: 1.4;
+      word-break: break-word;
+    }
+    .ref-item a:hover { text-decoration: underline; }
     @keyframes resultIn {
       from { opacity: 0; transform: translateY(14px) scale(0.98); }
       to   { opacity: 1; transform: translateY(0) scale(1); }
@@ -406,7 +492,15 @@
     @media (max-width: 600px) {
       body { padding: 24px 14px 60px; }
       .card { padding: 36px 24px 32px; }
+      .references-panel { padding: 0 16px; position: relative; top: auto; max-height: 0; }
+      .app-shell.has-references .references-panel { padding: 18px 16px; max-height: none; }
       h1 { font-size: 2rem; }
+    }
+    @media (max-width: 1080px) {
+      .app-shell { grid-template-columns: 1fr; max-width: 680px; }
+      .app-shell.has-references { grid-template-columns: 1fr; }
+      .references-panel { position: relative; top: auto; max-height: 0; }
+      .app-shell.has-references .references-panel { max-height: none; }
     }
   </style>
 </head>
@@ -421,8 +515,10 @@
     <span id="theme-label">Light</span>
   </button>
 
-  <!-- Main Card -->
-  <div class="card">
+  <div class="app-shell">
+
+    <!-- Main Card -->
+    <div class="card">
 
     <div class="header">
       <div class="badge">
@@ -434,16 +530,6 @@
       </div>
       <h1>ELI5 <em>Explainer</em></h1>
       <p class="subtitle">Type any complex topic — we'll break it down<br>like you're five years old. 🧒</p>
-    </div>
-
-    <!-- API Key -->
-    <div class="api-section">
-      <!-- key icon -->
-      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-        <path stroke-linecap="round" stroke-linejoin="round"
-          d="M15.75 5.25a3 3 0 0 1 3 3m3 0a6 6 0 0 1-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 0 1 18.75 8.25Z"/>
-      </svg>
-      <input type="password" id="api-key" placeholder="Paste your Gemini API key here…" autocomplete="off" />
     </div>
 
     <!-- Topic Input -->
@@ -471,6 +557,14 @@
       <div class="result-box" id="result-box"></div>
     </div>
 
+    </div>
+
+    <aside class="references-panel" id="references-panel" aria-live="polite">
+      <h2>References</h2>
+      <p>Sources Gemini used for this answer. Each source opens in a new tab.</p>
+      <div class="refs-empty" id="refs-empty">No references were returned for this answer.</div>
+      <ul class="ref-list" id="ref-list" hidden></ul>
+    </aside>
   </div>
 
   <div class="footer">
@@ -482,6 +576,7 @@
     const html = document.documentElement;
     const themeIcon = document.getElementById('theme-icon');
     const themeLabel = document.getElementById('theme-label');
+    const GEMINI_API_KEY = 'AIzaSyBKGZ3gHHkyNaN0CDmbO_zN7rZ_cVfoV1M';
 
     const sunPath = 'M12 3v1m0 16v1m8.66-9H21M3 12H2m15.36-6.36-.71.71M7.05 16.95l-.71.71M18.36 18.36l-.71-.71M7.05 7.05l-.71-.71M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z';
     const moonPath = 'M21.752 15.002A9.72 9.72 0 0 1 18 15.75 9.75 9.75 0 0 1 8.25 6c0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 12c0 5.385 4.365 9.75 9.75 9.75 4.94 0 9.055-3.674 9.75-8.442-.083.004-.166.008-.248.008l-.5-.004Z';
@@ -495,14 +590,16 @@
 
     /* ── EXPLAIN ────────────────────────────────────────────── */
     async function explainTopic() {
-      const apiKey = document.getElementById('api-key').value.trim();
       const topic  = document.getElementById('topic').value.trim();
       const btn    = document.getElementById('explain-btn');
       const container = document.getElementById('result-container');
       const box    = document.getElementById('result-box');
+      const refsEmpty = document.getElementById('refs-empty');
+      const refList = document.getElementById('ref-list');
+      const shell = document.querySelector('.app-shell');
 
-      if (!apiKey) {
-        showResult('⚠️ Please paste your Gemini API key first.', true);
+      if (!GEMINI_API_KEY || GEMINI_API_KEY === 'PASTE_YOUR_GEMINI_API_KEY_HERE') {
+        showResult('⚠️ Please hardcode your Gemini API key in GEMINI_API_KEY first.', true);
         return;
       }
       if (!topic) {
@@ -514,6 +611,8 @@
       btn.classList.add('loading');
       btn.disabled = true;
       container.style.display = 'none';
+      shell.classList.remove('has-references');
+      renderReferences([]);
 
       const prompt = `You are a clear, polished explainer writing for a college student.
 Explain the topic in a clean, structured, and approachable way.
@@ -521,6 +620,8 @@ Use simple language, but do not oversimplify the core idea.
 Define important terms when needed, avoid jargon unless you explain it, and include real-life examples that make the concept easier to picture.
 Use one or two practical analogies if they help clarity, and connect the idea to everyday situations, technology, school, work, or common experiences.
 Keep the tone professional, friendly, and easy to follow.
+Use Google Search grounding for current verifiable sources, and keep the explanation tied to those sources.
+Return sources that can be opened as clickable links.
 
 Topic: "${topic}"
 
@@ -528,12 +629,13 @@ Write in paragraphs and make the explanation feel complete, concrete, and natura
 
       try {
         const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               contents: [{ parts: [{ text: prompt }] }],
+              tools: [{ googleSearch: {} }],
               generationConfig: { temperature: 0.85, maxOutputTokens: 2048 }
             })  
           }
@@ -547,13 +649,16 @@ Write in paragraphs and make the explanation feel complete, concrete, and natura
 
         const data = await response.json();
         const text = extractGeminiText(data);
+        const references = extractGeminiReferences(data);
 
         if (!text) throw new Error('Empty response from Gemini. Try again!');
 
         showResult(text, false);
+        renderReferences(references);
 
       } catch (err) {
         showResult(`❌ Oops! ${err.message}`, true);
+        renderReferences([]);
       } finally {
         btn.classList.remove('loading');
         btn.disabled = false;
@@ -626,6 +731,81 @@ Write in paragraphs and make the explanation feel complete, concrete, and natura
 
       const fallbackText = data?.text || data?.output_text;
       return typeof fallbackText === 'string' ? fallbackText.trim() : '';
+    }
+
+    function extractGeminiReferences(data) {
+      const candidates = Array.isArray(data?.candidates) ? data.candidates : [];
+      const groundingMetadata =
+        candidates[0]?.groundingMetadata ||
+        candidates[0]?.grounding_metadata ||
+        candidates[0]?.content?.groundingMetadata ||
+        candidates[0]?.content?.grounding_metadata ||
+        data?.groundingMetadata ||
+        data?.grounding_metadata;
+
+      const chunks = Array.isArray(groundingMetadata?.groundingChunks)
+        ? groundingMetadata.groundingChunks
+        : Array.isArray(groundingMetadata?.grounding_chunks)
+          ? groundingMetadata.grounding_chunks
+          : [];
+
+      const refs = chunks.map(chunk => {
+        const source = chunk?.web || chunk?.maps || chunk?.url || chunk || {};
+        const uri = String(source.uri || source.url || source.link || '').trim();
+        const title = String(
+          source.title ||
+          source.displayName ||
+          source.domain ||
+          source.host ||
+          (uri ? safeHostname(uri) : '') ||
+          'Source'
+        ).trim();
+        return { title, uri };
+      }).filter(ref => ref.uri);
+
+      return dedupeReferences(refs);
+    }
+
+    function safeHostname(url) {
+      try {
+        return new URL(url).hostname.replace(/^www\./, '');
+      } catch {
+        return url;
+      }
+    }
+
+    function dedupeReferences(references) {
+      const seen = new Set();
+      return references.filter(ref => {
+        const key = `${ref.title}|${ref.uri}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    }
+
+    function renderReferences(references) {
+      const shell = document.querySelector('.app-shell');
+      const panel = document.getElementById('references-panel');
+      const refsEmpty = document.getElementById('refs-empty');
+      const refList = document.getElementById('ref-list');
+
+      if (!references.length) {
+        shell.classList.remove('has-references');
+        refsEmpty.hidden = false;
+        refList.hidden = true;
+        refList.innerHTML = '';
+        return;
+      }
+
+      shell.classList.add('has-references');
+      refsEmpty.hidden = true;
+      refList.hidden = false;
+      refList.innerHTML = references.map(ref => `
+        <li class="ref-item">
+          <a href="${escapeHtml(ref.uri)}" target="_blank" rel="noopener noreferrer">${escapeHtml(ref.title)}</a>
+        </li>
+      `).join('');
     }
 
     /* Allow Ctrl+Enter to submit */
